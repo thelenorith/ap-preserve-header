@@ -14,11 +14,12 @@ from typing import Any, Dict, List
 
 from astropy.io import fits
 from ap_common.fits import get_file_headers, update_xisf_headers
+from ap_common.logging_config import setup_logging
 from xisf import XISF
 
 from . import config
 
-# Configure logging
+# Module-level logger, configured in main()
 logger = logging.getLogger(__name__)
 
 
@@ -383,18 +384,13 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Configure logging
+    # Configure logging using ap-common's setup_logging
     # --quiet takes precedence over --debug
     if args.quiet:
-        log_level = logging.WARNING
-    elif args.debug:
-        log_level = logging.DEBUG
+        setup_logging(name=__name__, debug=False)
+        logging.getLogger(__name__).setLevel(logging.WARNING)
     else:
-        log_level = logging.INFO
-    logging.basicConfig(
-        level=log_level,
-        format="%(levelname)s: %(message)s",
-    )
+        setup_logging(name=__name__, debug=args.debug)
 
     preserve_headers(
         root_dir=args.root_dir,

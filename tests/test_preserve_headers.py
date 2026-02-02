@@ -451,15 +451,16 @@ class TestMain:
         )
 
     @patch("ap_preserve_header.preserve_headers.preserve_headers")
-    @patch("ap_preserve_header.preserve_headers.logging.basicConfig")
-    def test_main_with_quiet_flag(self, mock_logging, mock_preserve):
+    @patch("ap_preserve_header.preserve_headers.setup_logging")
+    def test_main_with_quiet_flag(self, mock_setup_logging, mock_preserve):
         """Test main with --quiet flag."""
         import logging
 
+        mock_logger = MagicMock()
         with patch(
             "sys.argv",
             ["preserve_headers.py", "/root", "--include", "CAMERA", "--quiet"],
-        ):
+        ), patch("logging.getLogger", return_value=mock_logger):
             preserve_headers.main()
 
         mock_preserve.assert_called_once_with(
@@ -467,21 +468,22 @@ class TestMain:
             include_headers=["CAMERA"],
             dryrun=False,
         )
-        mock_logging.assert_called_once_with(
-            level=logging.WARNING,
-            format="%(levelname)s: %(message)s",
+        mock_setup_logging.assert_called_once_with(
+            name="ap_preserve_header.preserve_headers", debug=False
         )
+        mock_logger.setLevel.assert_called_once_with(logging.WARNING)
 
     @patch("ap_preserve_header.preserve_headers.preserve_headers")
-    @patch("ap_preserve_header.preserve_headers.logging.basicConfig")
-    def test_main_with_quiet_short_flag(self, mock_logging, mock_preserve):
+    @patch("ap_preserve_header.preserve_headers.setup_logging")
+    def test_main_with_quiet_short_flag(self, mock_setup_logging, mock_preserve):
         """Test main with -q short flag."""
         import logging
 
+        mock_logger = MagicMock()
         with patch(
             "sys.argv",
             ["preserve_headers.py", "/root", "--include", "CAMERA", "-q"],
-        ):
+        ), patch("logging.getLogger", return_value=mock_logger):
             preserve_headers.main()
 
         mock_preserve.assert_called_once_with(
@@ -489,17 +491,20 @@ class TestMain:
             include_headers=["CAMERA"],
             dryrun=False,
         )
-        mock_logging.assert_called_once_with(
-            level=logging.WARNING,
-            format="%(levelname)s: %(message)s",
+        mock_setup_logging.assert_called_once_with(
+            name="ap_preserve_header.preserve_headers", debug=False
         )
+        mock_logger.setLevel.assert_called_once_with(logging.WARNING)
 
     @patch("ap_preserve_header.preserve_headers.preserve_headers")
-    @patch("ap_preserve_header.preserve_headers.logging.basicConfig")
-    def test_main_quiet_takes_precedence_over_debug(self, mock_logging, mock_preserve):
+    @patch("ap_preserve_header.preserve_headers.setup_logging")
+    def test_main_quiet_takes_precedence_over_debug(
+        self, mock_setup_logging, mock_preserve
+    ):
         """Test that --quiet takes precedence over --debug."""
         import logging
 
+        mock_logger = MagicMock()
         with patch(
             "sys.argv",
             [
@@ -510,7 +515,7 @@ class TestMain:
                 "--debug",
                 "--quiet",
             ],
-        ):
+        ), patch("logging.getLogger", return_value=mock_logger):
             preserve_headers.main()
 
         mock_preserve.assert_called_once_with(
@@ -518,8 +523,9 @@ class TestMain:
             include_headers=["CAMERA"],
             dryrun=False,
         )
-        # --quiet should take precedence, so log level should be WARNING not DEBUG
-        mock_logging.assert_called_once_with(
-            level=logging.WARNING,
-            format="%(levelname)s: %(message)s",
+        # --quiet should take precedence, so setup_logging is called with debug=False
+        # and logger level is set to WARNING
+        mock_setup_logging.assert_called_once_with(
+            name="ap_preserve_header.preserve_headers", debug=False
         )
+        mock_logger.setLevel.assert_called_once_with(logging.WARNING)
